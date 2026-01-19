@@ -113,9 +113,8 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-# 7. Launch Phase
+# 7. Acquisition & Launch Phase
 MEMORY_LIMIT="${MEMORY:-4G}"
-# Official Recommended Flags + Parevo optimizations
 JAVA_FLAGS=(
     "-Xms${MEMORY_LIMIT}" 
     "-Xmx${MEMORY_LIMIT}" 
@@ -124,83 +123,55 @@ JAVA_FLAGS=(
     "-Dparevo.edition=v3-ultimate"
 )
 
-# Add AOT Cache if found (Skips JIT warmup per manual)
-if [ -f "HytaleServer.aot" ]; then
-    JAVA_FLAGS+=("-XX:AOTCache=HytaleServer.aot")
-elif [ -f "Server/HytaleServer.aot" ]; then
-    JAVA_FLAGS+=("-XX:AOTCache=Server/HytaleServer.aot")
-fi
-
 # Define Assets Path
 ASSETS_PATH="${H_ASSETS_PATH:-Assets.zip}"
 
-# Check for write permissions in current directory
+# Check for write permissions
 if [ ! -w "." ]; then
     echo -e "${RED}[ERROR] No write permission in $(pwd).${NC}"
-    echo -e "${YELLOW}[TIP] Run 'sudo chown -R 998:998 data' on your host machine to fix permissions.${NC}"
-    echo -e "${YELLOW}[MOCK] Running simulated process to keep container alive...${NC}"
-    while true; do sleep 1 & wait $!; done
+    echo -e "${YELLOW}[TIP] Run 'sudo chown -R 998:998 data' on your host machine.${NC}"
+    exit 1
 fi
 
-# Check for HytaleServer.jar
+# 8. File Acquisition (Downloader)
 if [ ! -f "HytaleServer.jar" ] && [ ! -f "Server/HytaleServer.jar" ]; then
     if [ ! -z "${JAR_URL}" ]; then
-        echo -e "${BLUE}[INFO] Custom JAR_URL detected. Downloading...${NC}"
+        echo -e "${BLUE}[INFO] Downloading custom JAR...${NC}"
         curl -L -o HytaleServer.jar "${JAR_URL}"
     else
-        echo -e "${YELLOW}[INFO] HytaleServer.jar not found. Fetching OFFICIAL DOWNLOADER...${NC}"
-        # Use /tmp for downloading to avoid volume permission issues for the zip
+        echo -e "${YELLOW}[INFO] HytaleServer.jar not found. Starting OFFICIAL DOWNLOADER...${NC}"
         cd /tmp
         curl -L -o hytale-downloader.zip https://downloader.hytale.com/hytale-downloader.zip
         unzip -o hytale-downloader.zip
-        
-        # Identify the correct binary (it has arch suffixes like -linux-amd64)
-        DOWNLOADER_BIN=$(ls hytale-downloader-linux-* 2>/dev/null | head -n 1)
-        
-        if [ -z "${DOWNLOADER_BIN}" ]; then
-            echo -e "${RED}[ERROR] Downloader binary not found in zip.${NC}"
-        else
-            mv "${DOWNLOADER_BIN}" hytale-downloader
-            chmod +x hytale-downloader
-            
-            # Run downloader (This will trigger the OAuth2 device code flow)
+        DOWNLOAD_BIN=$(ls hytale-downloader-linux-* 2>/dev/null | head -n 1)
+        if [ ! -z "${DOWNLOAD_BIN}" ]; then
+            mv "${DOWNLOAD_BIN}" hytale-downloader && chmod +x hytale-downloader
             ./hytale-downloader -download-path /home/container/game.zip
-            
             cd /home/container
             if [ -f "game.zip" ]; then
-                 echo -e "${BLUE}[INFO] Extracting game files...${NC}"
-                 unzip -o game.zip
-                 
-                 # If files are in a Server/ subdirectory, move them to root (flat structure)
-                 if [ -d "Server" ]; then
-                     echo -e "${BLUE}[INFO] Organizing files into root directory...${NC}"
-                     mv Server/* . 2>/dev/null
-                     rmdir Server 2>/dev/null
-                 fi
-                 rm game.zip
+                echo -e "${BLUE}[INFO] Extracting game files...${NC}"
+                unzip -o game.zip && rm game.zip
             fi
         fi
-        
-        # Cleanup /tmp
-        rm /tmp/hytale-downloader.zip /tmp/hytale-downloader 2>/dev/null
-        
-        # Cleanup /tmp
         rm /tmp/hytale-downloader.zip /tmp/hytale-downloader 2>/dev/null
     fi
 fi
 
-# Check for HytaleServer.jar
+# 9. Directory Flattening
+if [ -d "Server" ]; then
+    echo -e "${BLUE}[INFO] Flattening directory structure...${NC}"
+    mv Server/* . 2>/dev/null && rmdir Server 2>/dev/null
+fi
+
+# 10. Final Start
 if [ -f "HytaleServer.jar" ]; then
-    echo -e "${BLUE}[INFO] Launching Hytale Server with Assets: ${ASSETS_PATH}...${NC}"
-    send_discord_notification "Online" "Parevo Hytale Server (V3 Ultimate) is now online." "3066993"
-    
-    # Official launch command from Manual
-    # -XX:AOTCache improves boot times significantly
+    [ -f "HytaleServer.aot" ] && JAVA_FLAGS+=("-XX:AOTCache=HytaleServer.aot")
+    echo -e "${BLUE}[INFO] Launching Hytale Server...${NC}"
+    send_discord_notification "Online" "Parevo Hytale Server is now online." "3066993"
     java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar --assets "${ASSETS_PATH}" &
     PID=$!
     wait $PID
 else
-    echo -e "${RED}[ERROR] HytaleServer.jar could not be found.${NC}"
-    echo -e "${RED}[ERROR] Please ensure files are in the volume or JAR_URL is correct.${NC}"
+    echo -e "${RED}[ERROR] HytaleServer.jar not found.${NC}"
     exit 1
 fi

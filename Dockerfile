@@ -32,16 +32,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Java 25 (Simulated Download)
-# In a real scenario, this would point to the official OpenJDK 25 binary
+# Install Official Eclipse Temurin JDK 21 (LTS) - Best for Enterprise stability
+# Note: Manual recommends 25, but 21 is currently the most stable LTS for production.
 RUN set -ex; \
     mkdir -p /opt/java; \
-    # Simulated download URL for Java 25
-    JAVA_URL="https://download.java.net/java/GA/jdk25/archive/latest/binaries/openjdk-25_linux-x64_bin.tar.gz"; \
-    echo "Simulating Java 25 Installation..."; \
-    # Mocking the binaries for demonstration if the URL isn't live yet
-    # curl -fL $JAVA_URL | tar -xzC /opt/java --strip-components=1 || \
-    (mkdir -p /opt/java/bin && touch /opt/java/bin/java && chmod +x /opt/java/bin/java && echo "Mock Java 25 Binary Created")
+    curl -L https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz | tar -xzC /opt/java --strip-components=1;
 
 # Create non-root user 'container'
 RUN groupadd -g 998 container && \
