@@ -119,7 +119,6 @@ JAVA_FLAGS=(
     "-Xms${MEMORY_LIMIT}" 
     "-Xmx${MEMORY_LIMIT}" 
     "-XX:+UseZGC" 
-    "-XX:+ZGenerational" 
     "-Dparevo.edition=v3-ultimate"
 )
 
