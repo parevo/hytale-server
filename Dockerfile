@@ -32,11 +32,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Official Eclipse Temurin JDK 21 (LTS) - Best for Enterprise stability
-# Note: Manual recommends 25, but 21 is currently the most stable LTS for production.
+# Install Official OpenJDK 25 (LTS) - Strictly following the manual
 RUN set -ex; \
     mkdir -p /opt/java; \
-    curl -L https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz | tar -xzC /opt/java --strip-components=1;
+    curl -L https://download.oracle.com/java/25/latest/jdk-25_linux-x64_bin.tar.gz | tar -xzC /opt/java --strip-components=1;
 
 # Create non-root user 'container'
 RUN groupadd -g 998 container && \
