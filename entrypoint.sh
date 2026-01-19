@@ -131,6 +131,14 @@ fi
 # Define Assets Path
 ASSETS_PATH="${H_ASSETS_PATH:-Assets.zip}"
 
+# Check for write permissions in current directory
+if [ ! -w "." ]; then
+    echo -e "${RED}[ERROR] No write permission in $(pwd).${NC}"
+    echo -e "${YELLOW}[TIP] Run 'sudo chown -R 998:998 data' on your host machine to fix permissions.${NC}"
+    echo -e "${YELLOW}[MOCK] Running simulated process to keep container alive...${NC}"
+    while true; do sleep 1 & wait $!; done
+fi
+
 # Check for HytaleServer.jar
 if [ ! -f "HytaleServer.jar" ]; then
     if [ ! -z "${JAR_URL}" ]; then
@@ -138,17 +146,25 @@ if [ ! -f "HytaleServer.jar" ]; then
         curl -L -o HytaleServer.jar "${JAR_URL}"
     else
         echo -e "${YELLOW}[INFO] HytaleServer.jar not found. Fetching OFFICIAL DOWNLOADER...${NC}"
-        echo -e "${YELLOW}[INFO] Visit https://downloader.hytale.com for more info.${NC}"
         
+        # Use /tmp for downloading to avoid volume permission issues for the zip
+        cd /tmp
         curl -L -o hytale-downloader.zip https://downloader.hytale.com/hytale-downloader.zip
         unzip -o hytale-downloader.zip
         chmod +x hytale-downloader
         
-        # Run downloader (This will trigger the OAuth2 device code flow if first time)
-        ./hytale-downloader
+        # Run downloader (This will trigger the OAuth2 device code flow)
+        # We tell it to download specifically to our home folder
+        ./hytale-downloader -download-path /home/container/game.zip
         
-        # Cleanup
-        rm hytale-downloader.zip hytale-downloader 2>/dev/null
+        cd /home/container
+        if [ -f "/home/container/game.zip" ]; then
+             unzip -o game.zip
+             rm game.zip
+        fi
+        
+        # Cleanup /tmp
+        rm /tmp/hytale-downloader.zip /tmp/hytale-downloader 2>/dev/null
     fi
 fi
 
