@@ -112,24 +112,57 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-# 7. Launch
+# 7. Launch Phase
 MEMORY_LIMIT="${MEMORY:-4G}"
-JAVA_FLAGS=("-Xms${MEMORY_LIMIT}" "-Xmx${MEMORY_LIMIT}" "-XX:+UseZGC" "-XX:+ZGenerational" "-Dparevo.edition=v3-ultimate")
+# Official Recommended Flags + Parevo optimizations
+JAVA_FLAGS=(
+    "-Xms${MEMORY_LIMIT}" 
+    "-Xmx${MEMORY_LIMIT}" 
+    "-XX:+UseZGC" 
+    "-XX:+ZGenerational" 
+    "-Dparevo.edition=v3-ultimate"
+)
 
+# Add AOT Cache if found (Skips JIT warmup per manual)
+if [ -f "HytaleServer.aot" ]; then
+    JAVA_FLAGS+=("-XX:AOTCache=HytaleServer.aot")
+fi
+
+# Define Assets Path
+ASSETS_PATH="${H_ASSETS_PATH:-Assets.zip}"
+
+# Check for HytaleServer.jar
 if [ ! -f "HytaleServer.jar" ]; then
     if [ ! -z "${JAR_URL}" ]; then
-        echo -e "${BLUE}[INFO] Downloading HytaleServer.jar from: ${JAR_URL}${NC}"
+        echo -e "${BLUE}[INFO] Custom JAR_URL detected. Downloading...${NC}"
         curl -L -o HytaleServer.jar "${JAR_URL}"
     else
-        echo -e "${YELLOW}[MOCK] HytaleServer.jar missing and no JAR_URL provided.${NC}"
-        echo -e "${YELLOW}[MOCK] Running simulated process...${NC}"
-        while true; do sleep 1 & wait $!; done
+        echo -e "${YELLOW}[INFO] HytaleServer.jar not found. Fetching OFFICIAL DOWNLOADER...${NC}"
+        echo -e "${YELLOW}[INFO] Visit https://downloader.hytale.com for more info.${NC}"
+        
+        curl -L -o hytale-downloader.zip https://downloader.hytale.com/hytale-downloader.zip
+        unzip -o hytale-downloader.zip
+        chmod +x hytale-downloader
+        
+        # Run downloader (This will trigger the OAuth2 device code flow if first time)
+        ./hytale-downloader
+        
+        # Cleanup
+        rm hytale-downloader.zip hytale-downloader 2>/dev/null
     fi
 fi
 
-echo -e "${BLUE}[INFO] Launching Hytale Server...${NC}"
-send_discord_notification "Online" "Parevo Hytale Server (V3 Ultimate) is now online." "3066993"
-
-java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar &
-PID=$!
-wait $PID
+# Start Server or Mock
+if [ -f "HytaleServer.jar" ]; then
+    echo -e "${BLUE}[INFO] Launching Hytale Server with Assets: ${ASSETS_PATH}...${NC}"
+    send_discord_notification "Online" "Parevo Hytale Server (V3 Ultimate) is now online." "3066993"
+    
+    # Official launch command structure
+    java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar --assets "${ASSETS_PATH}" &
+    PID=$!
+    wait $PID
+else
+    echo -e "${RED}[ERROR] HytaleServer.jar could not be found or downloaded.${NC}"
+    echo -e "${YELLOW}[MOCK] Running simulated process to keep container alive...${NC}"
+    while true; do sleep 1 & wait $!; done
+fi

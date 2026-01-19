@@ -66,19 +66,33 @@ services:
 
 ---
 
+## 🚀 Initial Setup & Authentication
+
+On the first launch, the image will automatically download the official **Hytale Downloader CLI** to fetch the server binaries.
+
+1. **Watch Logs**: Run `docker logs -f hytale-server`.
+2. **Authorize**: Look for a message: `Visit: https://accounts.hytale.com/device and enter code: XXXX-XXXX`.
+3. **Download**: Once authorized, the container will download the server files and boot automatically.
+
+> [!TIP]
+> You only need to do this once. The server files are stored in your mounted `./data` volume.
+
+---
+
 ## ⚙️ Environment Variables
 
-| Variable              | Default | Function                                  |
-| :-------------------- | :------ | :---------------------------------------- |
-| `MEMORY`              | `8G`    | Allocated RAM (Xms/Xmx).                  |
-| `JAR_URL`             | `null`  | Remote URL to download HytaleServer.jar.  |
-| `AUTO_UPDATE`         | `true`  | Fetch latest Hytale patches on startup.   |
-| `DISCORD_WEBHOOK_URL` | `null`  | Target URL for status notifications.      |
-| `MODS_GIT_URL`        | `null`  | Git repository for automatic mod syncing. |
-| `S3_BUCKET`           | `null`  | Primary backup destination.               |
-| `BACKUP_INTERVAL`     | `12h`   | Frequency of scheduled cloud backups.     |
-| `H_VIEW_DISTANCE`     | `16`    | WorldConfig.ViewDistance injection.       |
-| `H_PLAYER_LIMIT`      | `150`   | PlayerConfig.MaxPlayers injection.        |
+| Variable              | Default      | Function                                   |
+| :-------------------- | :----------- | :----------------------------------------- |
+| `MEMORY`              | `8G`         | Allocated RAM (Xms/Xmx).                   |
+| `JAR_URL`             | `null`       | Optional: Direct link to HytaleServer.jar. |
+| `H_ASSETS_PATH`       | `Assets.zip` | Path to assets file/folder.                |
+| `AUTO_UPDATE`         | `true`       | Fetch latest Hytale patches on startup.    |
+| `DISCORD_WEBHOOK_URL` | `null`       | Target URL for status notifications.       |
+| `MODS_GIT_URL`        | `null`       | Git repository for automatic mod syncing.  |
+| `S3_BUCKET`           | `null`       | Primary backup destination.                |
+| `BACKUP_INTERVAL`     | `12h`        | Frequency of scheduled cloud backups.      |
+| `H_VIEW_DISTANCE`     | `16`         | WorldConfig.ViewDistance injection.        |
+| `H_PLAYER_LIMIT`      | `150`        | PlayerConfig.MaxPlayers injection.         |
 
 ---
 
