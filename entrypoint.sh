@@ -149,7 +149,6 @@ if [ ! -f "HytaleServer.jar" ] && [ ! -f "Server/HytaleServer.jar" ]; then
         curl -L -o HytaleServer.jar "${JAR_URL}"
     else
         echo -e "${YELLOW}[INFO] HytaleServer.jar not found. Fetching OFFICIAL DOWNLOADER...${NC}"
-        
         # Use /tmp for downloading to avoid volume permission issues for the zip
         cd /tmp
         curl -L -o hytale-downloader.zip https://downloader.hytale.com/hytale-downloader.zip
@@ -166,38 +165,42 @@ if [ ! -f "HytaleServer.jar" ] && [ ! -f "Server/HytaleServer.jar" ]; then
             
             # Run downloader (This will trigger the OAuth2 device code flow)
             ./hytale-downloader -download-path /home/container/game.zip
+            
+            cd /home/container
+            if [ -f "game.zip" ]; then
+                 echo -e "${BLUE}[INFO] Extracting game files...${NC}"
+                 unzip -o game.zip
+                 
+                 # If files are in a Server/ subdirectory, move them to root (flat structure)
+                 if [ -d "Server" ]; then
+                     echo -e "${BLUE}[INFO] Organizing files into root directory...${NC}"
+                     mv Server/* . 2>/dev/null
+                     rmdir Server 2>/dev/null
+                 fi
+                 rm game.zip
+            fi
         fi
         
-        cd /home/container
-        if [ -f "/home/container/game.zip" ]; then
-             unzip -o game.zip
-             rm game.zip
-        fi
+        # Cleanup /tmp
+        rm /tmp/hytale-downloader.zip /tmp/hytale-downloader 2>/dev/null
         
         # Cleanup /tmp
         rm /tmp/hytale-downloader.zip /tmp/hytale-downloader 2>/dev/null
     fi
 fi
 
-# Check for HytaleServer.jar (Root or Server/ folder)
-HYTALE_JAR="HytaleServer.jar"
-if [ ! -f "${HYTALE_JAR}" ]; then
-    if [ -f "Server/HytaleServer.jar" ]; then
-        HYTALE_JAR="Server/HytaleServer.jar"
-    fi
-fi
-
-# Start Server or Mock
-if [ -f "${HYTALE_JAR}" ]; then
-    echo -e "${BLUE}[INFO] Launching Hytale Server: ${HYTALE_JAR} with Assets: ${ASSETS_PATH}...${NC}"
+# Check for HytaleServer.jar
+if [ -f "HytaleServer.jar" ]; then
+    echo -e "${BLUE}[INFO] Launching Hytale Server with Assets: ${ASSETS_PATH}...${NC}"
     send_discord_notification "Online" "Parevo Hytale Server (V3 Ultimate) is now online." "3066993"
     
-    # Official launch command structure
-    java "${JAVA_FLAGS[@]}" -jar "${HYTALE_JAR}" --assets "${ASSETS_PATH}" &
+    # Official launch command from Manual
+    # -XX:AOTCache improves boot times significantly
+    java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar --assets "${ASSETS_PATH}" &
     PID=$!
     wait $PID
 else
-    echo -e "${RED}[ERROR] HytaleServer.jar could not be found or downloaded.${NC}"
-    echo -e "${YELLOW}[MOCK] Running simulated process to keep container alive...${NC}"
-    while true; do sleep 1 & wait $!; done
+    echo -e "${RED}[ERROR] HytaleServer.jar could not be found.${NC}"
+    echo -e "${RED}[ERROR] Please ensure files are in the volume or JAR_URL is correct.${NC}"
+    exit 1
 fi
