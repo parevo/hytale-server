@@ -116,14 +116,20 @@ trap cleanup SIGTERM SIGINT
 MEMORY_LIMIT="${MEMORY:-4G}"
 JAVA_FLAGS=("-Xms${MEMORY_LIMIT}" "-Xmx${MEMORY_LIMIT}" "-XX:+UseZGC" "-XX:+ZGenerational" "-Dparevo.edition=v3-ultimate")
 
+if [ ! -f "HytaleServer.jar" ]; then
+    if [ ! -z "${JAR_URL}" ]; then
+        echo -e "${BLUE}[INFO] Downloading HytaleServer.jar from: ${JAR_URL}${NC}"
+        curl -L -o HytaleServer.jar "${JAR_URL}"
+    else
+        echo -e "${YELLOW}[MOCK] HytaleServer.jar missing and no JAR_URL provided.${NC}"
+        echo -e "${YELLOW}[MOCK] Running simulated process...${NC}"
+        while true; do sleep 1 & wait $!; done
+    fi
+fi
+
 echo -e "${BLUE}[INFO] Launching Hytale Server...${NC}"
 send_discord_notification "Online" "Parevo Hytale Server (V3 Ultimate) is now online." "3066993"
 
-if [ -f "HytaleServer.jar" ]; then
-    java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar &
-    PID=$!
-    wait $PID
-else
-    echo -e "${YELLOW}[MOCK] HytaleServer.jar missing, running simulated process...${NC}"
-    while true; do sleep 1 & wait $!; done
-fi
+java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar &
+PID=$!
+wait $PID

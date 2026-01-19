@@ -71,6 +71,7 @@ services:
 | Variable              | Default | Function                                  |
 | :-------------------- | :------ | :---------------------------------------- |
 | `MEMORY`              | `8G`    | Allocated RAM (Xms/Xmx).                  |
+| `JAR_URL`             | `null`  | Remote URL to download HytaleServer.jar.  |
 | `AUTO_UPDATE`         | `true`  | Fetch latest Hytale patches on startup.   |
 | `DISCORD_WEBHOOK_URL` | `null`  | Target URL for status notifications.      |
 | `MODS_GIT_URL`        | `null`  | Git repository for automatic mod syncing. |
