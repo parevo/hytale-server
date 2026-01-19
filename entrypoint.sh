@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------
-# PAREVO HYTALE SERVER - ULTIMATE ENTERPRISE V3 (FINAL)
+# PAREVO HYTALE SERVER - ULTIMATE ENTERPRISE V3
+# Version: 2026-01-20_01-55 (Architecture-Fix)
 # -------------------------------------------------------------------------
 
 # Color Definitions
