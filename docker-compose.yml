@@ -1,0 +1,53 @@
+services:
+  hytale-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/parevo/hytale-server:latest
+    container_name: parevo-hytale-ultimate
+    restart: unless-stopped
+    stop_grace_period: 2m # Extended for final S3 sync
+    ports:
+      - "5520:5520/udp"
+    environment:
+      - TZ=Europe/Istanbul
+      - MEMORY=16G
+      - AUTO_UPDATE=true
+
+      # Discord Webhook
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+
+      # Git Mod Sync
+      - MODS_GIT_URL=${MODS_GIT_URL:-}
+
+      # S3 Cloud Backups
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-}
+      - S3_ENDPOINT=${S3_ENDPOINT:-} # e.g., https://s3.amazonaws.com
+      - S3_REGION=us-east-1
+      - BACKUP_INTERVAL=12h
+
+      # Hytale Config Injection
+      - H_VIEW_DISTANCE=16
+      - H_PLAYER_LIMIT=150
+
+    volumes:
+      - ./data:/home/container
+      - /etc/machine-id:/etc/machine-id:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z -u localhost 5520 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "8.0"
+          memory: 20G
+    networks:
+      - hytale-net
+
+networks:
+  hytale-net:
+    driver: bridge
