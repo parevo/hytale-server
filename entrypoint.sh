@@ -127,6 +127,8 @@ JAVA_FLAGS=(
 # Add AOT Cache if found (Skips JIT warmup per manual)
 if [ -f "HytaleServer.aot" ]; then
     JAVA_FLAGS+=("-XX:AOTCache=HytaleServer.aot")
+elif [ -f "Server/HytaleServer.aot" ]; then
+    JAVA_FLAGS+=("-XX:AOTCache=Server/HytaleServer.aot")
 fi
 
 # Define Assets Path
@@ -141,7 +143,7 @@ if [ ! -w "." ]; then
 fi
 
 # Check for HytaleServer.jar
-if [ ! -f "HytaleServer.jar" ]; then
+if [ ! -f "HytaleServer.jar" ] && [ ! -f "Server/HytaleServer.jar" ]; then
     if [ ! -z "${JAR_URL}" ]; then
         echo -e "${BLUE}[INFO] Custom JAR_URL detected. Downloading...${NC}"
         curl -L -o HytaleServer.jar "${JAR_URL}"
@@ -177,13 +179,21 @@ if [ ! -f "HytaleServer.jar" ]; then
     fi
 fi
 
+# Check for HytaleServer.jar (Root or Server/ folder)
+HYTALE_JAR="HytaleServer.jar"
+if [ ! -f "${HYTALE_JAR}" ]; then
+    if [ -f "Server/HytaleServer.jar" ]; then
+        HYTALE_JAR="Server/HytaleServer.jar"
+    fi
+fi
+
 # Start Server or Mock
-if [ -f "HytaleServer.jar" ]; then
-    echo -e "${BLUE}[INFO] Launching Hytale Server with Assets: ${ASSETS_PATH}...${NC}"
+if [ -f "${HYTALE_JAR}" ]; then
+    echo -e "${BLUE}[INFO] Launching Hytale Server: ${HYTALE_JAR} with Assets: ${ASSETS_PATH}...${NC}"
     send_discord_notification "Online" "Parevo Hytale Server (V3 Ultimate) is now online." "3066993"
     
     # Official launch command structure
-    java "${JAVA_FLAGS[@]}" -jar HytaleServer.jar --assets "${ASSETS_PATH}" &
+    java "${JAVA_FLAGS[@]}" -jar "${HYTALE_JAR}" --assets "${ASSETS_PATH}" &
     PID=$!
     wait $PID
 else
