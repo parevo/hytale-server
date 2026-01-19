@@ -151,11 +151,19 @@ if [ ! -f "HytaleServer.jar" ]; then
         cd /tmp
         curl -L -o hytale-downloader.zip https://downloader.hytale.com/hytale-downloader.zip
         unzip -o hytale-downloader.zip
-        chmod +x hytale-downloader
         
-        # Run downloader (This will trigger the OAuth2 device code flow)
-        # We tell it to download specifically to our home folder
-        ./hytale-downloader -download-path /home/container/game.zip
+        # Identify the correct binary (it has arch suffixes like -linux-amd64)
+        DOWNLOADER_BIN=$(ls hytale-downloader-linux-* 2>/dev/null | head -n 1)
+        
+        if [ -z "${DOWNLOADER_BIN}" ]; then
+            echo -e "${RED}[ERROR] Downloader binary not found in zip.${NC}"
+        else
+            mv "${DOWNLOADER_BIN}" hytale-downloader
+            chmod +x hytale-downloader
+            
+            # Run downloader (This will trigger the OAuth2 device code flow)
+            ./hytale-downloader -download-path /home/container/game.zip
+        fi
         
         cd /home/container
         if [ -f "/home/container/game.zip" ]; then
